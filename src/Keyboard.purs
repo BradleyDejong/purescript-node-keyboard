@@ -1,10 +1,9 @@
-module Keyboard (KEYPRESS, KeyPressF, runRealKeyPress, waitForKey, endProcess) where
+module Keyboard (KEYPRESS, KeyPressEvent, KeyPressF(..), waitForKey, endProcess, _keyPress) where
 
 import Prelude
 
 import Control.Monad.Free (Free)
-import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
-import Run (AFF, FProxy, Run, SProxy(..), liftAff, on)
+import Run (FProxy, Run, SProxy(..))
 import Run as Run
 
 type KeyPressEvent =
@@ -31,16 +30,3 @@ waitForKey = Run.lift _keyPress (WaitForKey identity)
 endProcess :: forall r. Run (keyPress :: KEYPRESS | r) Unit
 endProcess = Run.lift _keyPress (EndProcess unit)
 
-realKeyPress :: forall r. KeyPressF ~> Run (aff :: AFF | r)
-realKeyPress (WaitForKey reply) = do
-  keyEvent <- liftAff $ fromEffectFnAff getNextKey
-  pure $ (reply $ keyEvent)
-realKeyPress (EndProcess next) = do
-  liftAff $ fromEffectFnAff exitProcess
-  pure next
-
-runRealKeyPress :: forall r. Run (keyPress :: KEYPRESS, aff :: AFF | r) ~> Run(aff :: AFF | r)
-runRealKeyPress = Run.interpretRec(on _keyPress realKeyPress Run.send)
-
-foreign import getNextKey :: EffectFnAff KeyPressEvent
-foreign import exitProcess :: EffectFnAff Unit

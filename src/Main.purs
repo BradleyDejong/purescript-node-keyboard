@@ -5,10 +5,10 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class.Console (log)
+import Keyboard (KEYPRESS, waitForKey, endProcess)
+import Node.Keyboard (nodeKeyPressRunner)
 import Run (AFF, Run, liftAff)
 import Run as Run
-
-import Keyboard (KEYPRESS, waitForKey, runRealKeyPress, endProcess)
 
 testProgram :: forall r. Run(keyPress :: KEYPRESS, aff :: AFF | r) String
 testProgram = testProgram_ ""
@@ -31,7 +31,7 @@ mainLoop = do
   log $ "Final word was: " <> str
   where
     interpreted :: forall r. Run(aff :: AFF | r) String
-    interpreted = testProgram # runRealKeyPress
+    interpreted = testProgram # nodeKeyPressRunner
 
 main :: Effect Unit
 main = do
