@@ -3,9 +3,9 @@ Welcome to a Spago project!
 You can edit this file as you like.
 -}
 { name =
-    "my-project"
+    "run-keyboard"
 , dependencies =
-    [ "console", "effect", "psci-support", "run" ]
+    [ "ansi", "console", "effect", "psci-support", "run" ]
 , packages =
     ./packages.dhall
 , sources =

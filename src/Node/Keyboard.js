@@ -2,17 +2,15 @@
 const readline = require("readline");
 
 // Allows us to listen for events from stdin
-readline.emitKeypressEvents(process.stdin);
+const ev = readline.emitKeypressEvents(process.stdin);
 
 let keystrokeBuffer = [];
 let needingKeys = [];
 
 // Raw mode gets rid of standard keypress events and other
 // functionality Node.js adds by default
-process.stdin.setRawMode(true);
 
-// Start the keypress listener for the process
-process.stdin.on("keypress", (str, key) => {
+const onKeyPress = (str, key) => {
   if (needingKeys.length) {
     needingKeys.pop()(key);
   } else {
@@ -23,14 +21,30 @@ process.stdin.on("keypress", (str, key) => {
   if (key.sequence === "\u0003") {
     process.exit();
   }
+};
 
-  // User has triggered a keypress, now do whatever we want!
-  // ...
-});
+exports.setNodeRawMode = function(error, success) {
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+
+    // Start the keypress listener for the process
+    process.stdin.on("keypress", onKeyPress);
+    success();
+  } else {
+    error("Terminal is not TTY");
+  }
+
+  return function(a, b, c) {
+    c();
+  };
+};
 
 exports.exitProcess = function(error, success) {
   console.log("Goodbye!");
+  process.stdin.setRawMode(false);
+  process.stdin.removeAllListeners("keypress");
   process.exit();
+  success();
 
   return function(a, b, c) {
     c();
