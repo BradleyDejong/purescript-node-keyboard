@@ -40,7 +40,6 @@ exports.setNodeRawMode = function(error, success) {
 };
 
 exports.exitProcess = function(error, success) {
-  console.log("Goodbye!");
   process.stdin.setRawMode(false);
   process.stdin.removeAllListeners("keypress");
   process.exit();

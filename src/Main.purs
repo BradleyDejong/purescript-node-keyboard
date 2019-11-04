@@ -79,7 +79,6 @@ multiSelectFromList :: forall r a. Ord a => ConsoleShow a => SafeList a -> (Set 
 multiSelectFromList options onSelectFinish = do
   interface <- beginCapture
   result <- doMultiSelect interface options Set.empty
-  liftAff $ log $ "Selected items: " <> show result
   liftAff $ onSelectFinish result
   stopCapture interface
   where
