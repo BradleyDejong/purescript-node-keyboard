@@ -5,7 +5,7 @@ You can edit this file as you like.
 { name =
     "run-keyboard"
 , dependencies =
-    [ "ansi", "console", "effect", "psci-support", "run" ]
+    [ "ansi", "console", "effect", "node-readline", "psci-support", "run" ]
 , packages =
     ./packages.dhall
 , sources =

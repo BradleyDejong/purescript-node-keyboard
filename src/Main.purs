@@ -5,17 +5,20 @@ import RunKeyboard.Console
 
 import Ansi.Codes (Color(..), EraseParam(..), EscapeCode(..), GraphicsParam(..), escapeCodeToString)
 import Ansi.Output (background, foreground, withGraphics)
+import Data.Either (Either(..))
 import Data.List (List(..), concat, intercalate, snoc, unsnoc, (:))
 import Data.List.NonEmpty (NonEmptyList(..), fromList, head, singleton, tail)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff, Canceler(..), Error, launchAff_, makeAff, nonCanceler)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import Keyboard (ControlKeyType(..), Direction(..), KEYPRESS, KeyPressEvent(..), KeyPressInterface, beginCapture, stopCapture, waitForKey)
+import Keyboard (ControlKeyType(..), Direction, KEYPRESS, KeyPressEvent(..), KeyPressInterface, beginCapture, stopCapture, waitForKey)
 import Keyboard as Keyboard
 import Node.Keyboard (nodeKeyPressRunner)
+import Node.ReadLine (Interface, close, createConsoleInterface, noCompletion, question)
 import Run (AFF, Run, liftAff)
 import Run as Run
 
@@ -80,7 +83,7 @@ multiSelectFromList options onSelectFinish = do
   interface <- beginCapture
   result <- doMultiSelect interface options Set.empty
   liftAff $ onSelectFinish result
-  stopCapture interface
+  --stopCapture interface
   where
     doMultiSelect :: Keyboard.KeyPressInterface -> SafeList a -> Set a -> Run (keyPress :: KEYPRESS, aff :: AFF | r) (Set a)
     doMultiSelect interface opts selected = do
@@ -110,7 +113,7 @@ pickFromList options = do
   interface <- beginCapture
   result <- testProgram_ interface options
   liftAff $ log $ "Final output: " <> show result
-  stopCapture interface
+  --stopCapture interface
   where
     testProgram_ :: forall a. Show a => KeyPressInterface -> SafeList a -> Run(keyPress :: KEYPRESS, aff :: AFF | r) a
     testProgram_ interface items = do
@@ -129,8 +132,23 @@ pickFromList options = do
 
 mainLoop :: Aff Unit
 mainLoop = do
+  interface <- liftEffect $ createConsoleInterface noCompletion
+  res <- askUser interface "HEY"
+  log res
   Run.runBaseAff $ (pickFromList hardCodedStuff) # nodeKeyPressRunner
+  again <- askUser interface "Go ok? "
+  log again
+  liftEffect $ close interface
 
 main :: Effect Unit
 main = do
   launchAff_ mainLoop
+
+askUser :: Interface -> String -> Aff String
+askUser interface message = do
+  res <- makeAff $ go
+  pure res
+  where
+    go :: ((Either Error String -> Effect Unit) -> Effect Canceler)
+    go runAffFunction =
+      nonCanceler <$ question message (runAffFunction <<< Right) interface
