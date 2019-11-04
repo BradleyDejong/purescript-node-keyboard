@@ -6,7 +6,8 @@ import RunKeyboard.Console
 import Ansi.Codes (Color(..), EraseParam(..), EscapeCode(..), GraphicsParam(..), escapeCodeToString)
 import Ansi.Output (background, foreground, withGraphics)
 import Data.Either (Either(..))
-import Data.List (List(..), concat, intercalate, snoc, unsnoc, (:))
+import Data.Foldable (class Foldable)
+import Data.List (List(..), concat, fromFoldable, intercalate, snoc, unsnoc, (:))
 import Data.List.NonEmpty (NonEmptyList(..), fromList, head, singleton, tail)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
@@ -78,11 +79,11 @@ render ui = do
     renderLines lines = ((\x -> "  " <> show x) <$> lines)
     currentLine = "► " <> show ui.ptr
 
-multiSelectFromList :: forall r a. Ord a => ConsoleShow a => SafeList a -> (Set a -> Aff Unit) -> Run (keyPress :: KEYPRESS, aff :: AFF | r) Unit
-multiSelectFromList options onSelectFinish = do
+multiSelectFromList :: forall r a. Ord a => ConsoleShow a => SafeList a -> Run (keyPress :: KEYPRESS, aff :: AFF | r) (List a)
+multiSelectFromList options = do
   interface <- beginCapture
   result <- doMultiSelect interface options Set.empty
-  liftAff $ onSelectFinish result
+  pure $ fromFoldable result
   --stopCapture interface
   where
     doMultiSelect :: Keyboard.KeyPressInterface -> SafeList a -> Set a -> Run (keyPress :: KEYPRESS, aff :: AFF | r) (Set a)
@@ -135,9 +136,11 @@ mainLoop = do
   interface <- liftEffect $ createConsoleInterface noCompletion
   res <- askUser interface "HEY"
   log res
-  Run.runBaseAff $ (pickFromList hardCodedStuff) # nodeKeyPressRunner
-  again <- askUser interface "Go ok? "
-  log again
+  items <- Run.runBaseAff $ (multiSelectFromList hardCodedStuff) # nodeKeyPressRunner
+  log $ "items " <> show items
+
+  res2 <- askUser interface "HEY"
+  log res2
   liftEffect $ close interface
 
 main :: Effect Unit
