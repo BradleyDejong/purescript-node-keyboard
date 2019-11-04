@@ -75,11 +75,12 @@ render ui = do
     renderLines lines = ((\x -> "  " <> show x) <$> lines)
     currentLine = "► " <> show ui.ptr
 
-multiSelectFromList :: forall r a. Ord a => ConsoleShow a => SafeList a -> Run (keyPress :: KEYPRESS, aff :: AFF | r) Unit
-multiSelectFromList options = do
+multiSelectFromList :: forall r a. Ord a => ConsoleShow a => SafeList a -> (Set a -> Aff Unit) -> Run (keyPress :: KEYPRESS, aff :: AFF | r) Unit
+multiSelectFromList options onSelectFinish = do
   interface <- beginCapture
   result <- doMultiSelect interface options Set.empty
   liftAff $ log $ "Selected items: " <> show result
+  liftAff $ onSelectFinish result
   stopCapture interface
   where
     doMultiSelect :: Keyboard.KeyPressInterface -> SafeList a -> Set a -> Run (keyPress :: KEYPRESS, aff :: AFF | r) (Set a)
